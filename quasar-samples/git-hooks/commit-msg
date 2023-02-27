@@ -1,0 +1,69 @@
+#!/bin/bash
+
+commit_message_check (){
+      gitmessage=`cat $1`
+      messagemerge=`echo "$gitmessage" | grep -i -w "merge"`
+      firstLine=`echo "$gitmessage" | head -1`
+      initialMsg="feat\|fix\|docs\|breaking"
+      issueRegex='(\(#[0-9]+\))'
+      separator=':'
+
+
+
+      if [ `echo ${#messagemerge}` -lt 1 ]
+      then
+            # Verifica inicio da string de commit se tem os termos esperados
+            messagecheck=`echo "$gitmessage" | grep -w $initialMsg`
+            if [ -z "$messagecheck" ]
+            then
+                  echo "Sua mensagem de confirmação deve começar com:"
+                  echo "  feat: É usado para identificar alterações relacionadas a novas funcionalidades"
+                  echo "  fix: É usado para identificar alterações relacionadas a correções de bugs"
+                  echo "  style: É usado para identificar alterações relacionadas ao estilo do código"
+                  echo "  test: É usado para identificar mudanças de desenvolvimento relacionadas a testes"
+                  echo "  docs: É usado para identificar mudanças na documentação relacionadas ao projeto"
+                  echo "  ci: É usado para identificar mudanças de desenvolvimento relacionadas à integração contínua e sistema de implantação"
+                  echo " "
+            fi
+            #Verifica se a mensagem contem a referência da issue conforme padrão
+            messagecheck=`echo "$gitmessage" | grep -iE $issueRegex`
+            if [ -z "$messagecheck" ]
+            then
+                  echo -e "\e[91mSua mensagem de commit deve conter o link para a issue relacionada "
+                  echo -e "\e[91m (#123)"
+                  echo " "
+            fi
+            messagecheck=`echo "$gitmessage" | grep -w $separator`
+            if  [ -z "$messagecheck" ]
+            then
+                  echo -e "\e[91mErro de formatação! Deve haver um '" $separator "'após o (#123)"
+                  echo -e "\e[91m" "feat(#123): sua mensagem de commit "
+                  echo " "
+            fi
+            messagecheck=`echo "$firstLine" | head -1 | grep -iE ": .{1,59}$"`
+            if  [ -z "$messagecheck" ]
+            then
+                  echo -e "\e[91mErro de formatação! Sua mensagem de commit de ter de 1 a 60 caracteres após o separador"
+                  echo -e "\e[91m" "feat(#123): sua mensagem de commit "
+                  echo " "
+            fi
+
+            # All checks run at the same time by pipeing from one grep to another
+            messagecheck=`echo "$gitmessage" | grep -w $initialMsg | grep -iE $issueRegex | grep $separator`
+            messageFirst=`echo "$firstLine" | head -1 | grep -iE ": .{1,59}$"`
+            # check to see if the message-check var is empty
+            if [ -z "$messagecheck" -a -z "$messageFirst" ]
+            then
+                  echo -e "\e[91mA mensagem de commit: '$gitmessage' não atende os padrões"
+                  echo " "
+                  echo -e "\e[91m'$gitmessage'"
+                  echo " "
+                  set -o errexit
+                  exit 1
+            else
+                  echo -e "\e[34m commit message passed\033[0m"
+            fi
+      fi
+}
+# Calling the function
+commit_message_check "$1"

@@ -1,0 +1,37 @@
+name: Get functions to deploy
+
+on:
+  pull_request:
+    types: 
+      - opened
+    branches: 
+      - develop
+
+env:
+  BRANCH: ${{ github.event.pull_request.head.ref }}
+  BODY: ${{ github.event.pull_request.body }}
+  PROJECT: ${{ secrets.PROJECT_ID_TEST }}
+
+jobs:
+  get_functions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Generate file from PR message
+        shell: bash
+        run: |
+          IFS=/ read context branch_name <<< ${BRANCH}
+          echo ${BODY} > $branch_name
+      - name: Create key file
+        shell: bash
+        run: |
+          echo '${{ secrets.KEY_TEST }}' > 'key-file.json'          
+      - name: Install Packages
+        run: cd .github/scripts && npm install
+      - name: Send file to Firebase
+        shell: bash
+        run: |
+          echo ${PROJECT}
+          IFS=/ read context branch_name <<< ${BRANCH}
+          cd .github/scripts
+          node -e 'require("./deploy").uploadFile("'${PROJECT}'", "'$branch_name'")'
